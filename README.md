@@ -1,4 +1,4 @@
-# AI Class Absentee Checker
+# Class Absentee Checker
 
 A single-purpose tool: take a classroom photo, instantly see who's absent. No
 sensitivity slider, no history log — just enroll students once and scan.
