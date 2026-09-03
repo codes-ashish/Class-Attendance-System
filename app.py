@@ -1,4 +1,5 @@
 import os
+import json
 from datetime import datetime
 
 import streamlit as st
@@ -27,7 +28,7 @@ USING_DEFAULT_PIN = PROFESSOR_PIN == "1234"
 
 MIN_RECOMMENDED_WIDTH = 1000  # px; below this, back-row faces are usually too small to help
 
-st.set_page_config(page_title="Class Absentee Checker", layout="wide")
+st.set_page_config(page_title="AI Class Absentee Checker", layout="wide")
 db.init_db()
 
 if "is_authenticated" not in st.session_state:
@@ -392,31 +393,38 @@ if st.session_state["is_authenticated"]:
                 st.info(f"No students enrolled in '{view_class}' yet.")
 
         st.divider()
-        st.subheader("💾 Backup / Restore Roster Database")
+        st.subheader("💾 Backup / Restore Roster")
         st.caption(
-            "If you deploy this app to a free host (Streamlit Community Cloud, etc.), the local "
-            "database file usually gets wiped whenever the app restarts or redeploys — that would "
-            "mean re-enrolling every student. Download a backup after enrolling students, and "
-            "restore it any time the roster comes back empty."
+            "Your roster lives in a persistent database now, so it survives app restarts and "
+            "redeploys on its own — this is just an extra safety net."
         )
         bcol1, bcol2 = st.columns(2)
         with bcol1:
-            if os.path.exists(db.DB_NAME):
-                with open(db.DB_NAME, "rb") as f:
-                    st.download_button(
-                        "⬇️ Download Backup",
-                        f.read(),
-                        file_name=f"attendance_backup_{datetime.now().strftime('%Y%m%d_%H%M')}.db",
-                        mime="application/octet-stream",
-                        use_container_width=True,
-                    )
+            if st.button("⬇️ Prepare Backup (JSON)", use_container_width=True):
+                st.session_state["_backup_json"] = json.dumps(db.export_all(), indent=2)
+            if "_backup_json" in st.session_state:
+                st.download_button(
+                    "Download backup.json",
+                    st.session_state["_backup_json"].encode("utf-8"),
+                    file_name=f"attendance_backup_{datetime.now().strftime('%Y%m%d_%H%M')}.json",
+                    mime="application/json",
+                    use_container_width=True,
+                )
         with bcol2:
-            restore_file = st.file_uploader("Restore from backup (.db)", type=["db"], key="restore_upload")
-            if restore_file is not None:
-                st.warning("This will REPLACE all current classes, students, and reference photos.")
-                if st.button("⚠️ Confirm Restore", use_container_width=True):
-                    with open(db.DB_NAME, "wb") as f:
-                        f.write(restore_file.getvalue())
-                    st.success("Roster restored. Reloading…")
-                    st.cache_resource.clear()
-                    st.rerun()
+            restore_json = st.file_uploader("Restore from JSON backup", type=["json"], key="restore_json")
+            if restore_json is not None and st.button("Import JSON Backup", use_container_width=True):
+                data = json.loads(restore_json.getvalue().decode("utf-8"))
+                c, s, p = db.import_from_export(data)
+                st.success(f"Imported {c} new class(es), {s} student(s), {p} photo(s).")
+                st.rerun()
+
+        with st.expander("📥 Recover from an old local .db backup (pre-migration)"):
+            st.caption(
+                "If you still have an attendance_backup_*.db file downloaded from before this app "
+                "moved to a persistent database, upload it here to recover that roster."
+            )
+            old_backup = st.file_uploader("Old .db backup file", type=["db"], key="old_sqlite_backup")
+            if old_backup is not None and st.button("Import Old Backup"):
+                c, s, p = db.import_from_sqlite_backup(old_backup.getvalue())
+                st.success(f"Imported {c} new class(es), {s} student(s), {p} photo(s) from the old backup.")
+                st.rerun()

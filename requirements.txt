@@ -4,3 +4,4 @@ numpy
 pandas
 insightface
 onnxruntime
+psycopg2-binary

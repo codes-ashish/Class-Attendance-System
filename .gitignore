@@ -1,5 +1,22 @@
+# Old local SQLite files, if any linger from before the Postgres migration
 attendance.db
+*.db
+
+# Streamlit secrets - contains your DATABASE_URL and admin PIN, don't commit
+.streamlit/secrets.toml
+
+# Python
 __pycache__/
 *.pyc
+*.pyo
+.Python
 venv/
-.streamlit/secrets.toml
+env/
+.venv/
+
+# InsightFace model cache
+.insightface/
+
+# OS junk
+.DS_Store
+Thumbs.db
