@@ -27,7 +27,7 @@ USING_DEFAULT_PIN = PROFESSOR_PIN == "1234"
 
 MIN_RECOMMENDED_WIDTH = 1000  # px; below this, back-row faces are usually too small to help
 
-st.set_page_config(page_title="AI Class Absentee Checker", layout="wide")
+st.set_page_config(page_title="Class Absentee Checker", layout="wide")
 db.init_db()
 
 if "is_authenticated" not in st.session_state:
